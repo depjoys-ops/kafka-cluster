@@ -1,3 +1,3 @@
-broker-1/vagrant/*
-broker-2/vagrant/*
-broker-3/vagrant/*
+broker-1/.vagrant/*
+broker-2/.vagrant/*
+broker-3/.vagrant/*

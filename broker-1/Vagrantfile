@@ -19,6 +19,8 @@ Vagrant.configure("2") do |config|
         sudo mkdir -p "/opt/kafka_2.13-${VER}"
         sudo tar -xzf "kafka_2.13-${VER}.tgz" -C "/opt/kafka_2.13-${VER}" --strip-components=1
         sudo ln -sfn "/opt/kafka_2.13-${VER}" /opt/kafka
+        sudo mkdir -p /opt/kafka/config-orig
+        sudo cp -a /opt/kafka/config/. /opt/kafka/config-orig/
       SHELL
     end
 end

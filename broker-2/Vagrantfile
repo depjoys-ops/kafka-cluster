@@ -10,36 +10,66 @@ Vagrant.configure("2") do |config|
         vb.name = "kafka-cluster-broker-2"
       end
 
-      config.vm.provision "shell", privileged: false, inline: <<-SHELL
+      dev.vm.provision "shell", privileged: false, run: "once", inline: <<-SHELL
         sudo apt-get update
         sudo apt-get install mc -y
-        echo "192.168.56.10 kafka1" | sudo tee -a /etc/hosts
-        echo "192.168.56.11 kafka2" | sudo tee -a /etc/hosts
-        echo "192.168.56.12 kafka3" | sudo tee -a /etc/hosts
 
         VER="4.1.1"
         wget "https://dlcdn.apache.org/kafka/${VER}/kafka_2.13-${VER}.tgz"
-
         sudo mkdir -p "/opt/kafka_2.13-${VER}"
         sudo tar -xzf "kafka_2.13-${VER}.tgz" -C "/opt/kafka_2.13-${VER}" --strip-components=1
+        sudo chown -R vagrant:vagrant "/opt/kafka_2.13-${VER}"
         sudo ln -sfn "/opt/kafka_2.13-${VER}" /opt/kafka
+        sudo chown -h vagrant:vagrant /opt/kafka
         sudo mkdir -p /opt/kafka/config-orig
         sudo cp -a /opt/kafka/config/. /opt/kafka/config-orig/
         sudo mkdir -p /opt/kafka-data/kraft-combined-logs
-
-        sudo sed -i 's|^[[:space:]]*node.id=.*|node.id=2|' /opt/kafka/config/server.properties
-        sudo sed -i 's|^[[:space:]]*controller.quorum.bootstrap.servers=.*|controller.quorum.bootstrap.servers=kafka1:9093,kafka2:9093,kafka3:9093|' /opt/kafka/config/server.properties
-        sudo sed -i '/controller.quorum.bootstrap.servers=/a controller.quorum.voters=1@kafka1:9093,2@kafka2:9093,3@kafka3:9093' /opt/kafka/config/server.properties
-        sudo sed -i 's|^[[:space:]]*advertised.listeners=.*|advertised.listeners=PLAINTEXT://kafka1:9092,CONTROLLER://kafka1:9093|' /opt/kafka/config/server.properties
-        sudo sed -i 's|^[[:space:]]*log.dirs=.*|log.dirs=/opt/kafka-data/kraft-combined-logs|' /opt/kafka/config/server.properties
+        sudo chown -R vagrant:vagrant /opt/kafka-data
 
         wget https://aka.ms/download-jdk/microsoft-jdk-25-linux-x64.tar.gz
         sudo mkdir -p /opt/jdk/microsoft-jdk-25
+        sudo chown -R vagrant:vagrant /opt/jdk
         sudo tar -xzf microsoft-jdk-25-linux-x64.tar.gz -C /opt/jdk/microsoft-jdk-25 --strip-components=1
         echo "export JAVA_HOME=/opt/jdk/microsoft-jdk-25" >>  ~/.profile
         echo "export PATH=\$JAVA_HOME/bin:\$PATH" >>  ~/.profile
         source ~/.profile
-
       SHELL
+
+      dev.vm.provision "shell", privileged: false, run: "always", inline: <<-SHELL
+        grep -qxF "192.168.56.10 kafka1" /etc/hosts || echo "192.168.56.10 kafka1" | sudo tee -a /etc/hosts
+        grep -qxF "192.168.56.11 kafka2" /etc/hosts || echo "192.168.56.11 kafka2" | sudo tee -a /etc/hosts
+        grep -qxF "192.168.56.12 kafka3" /etc/hosts || echo "192.168.56.12 kafka3" | sudo tee -a /etc/hosts
+
+        sudo sed -i 's|^[[:space:]]*node.id=.*|node.id=2|' /opt/kafka/config/server.properties
+        sudo sed -i 's|^[[:space:]]*controller.quorum.bootstrap.servers=.*|controller.quorum.bootstrap.servers=kafka1:9093,kafka2:9093,kafka3:9093|' /opt/kafka/config/server.properties
+        sudo sed -i '/^controller.quorum.voters=/d' /opt/kafka/config/server.properties
+        sudo sed -i '/controller.quorum.bootstrap.servers=/a controller.quorum.voters=1@kafka1:9093,2@kafka2:9093,3@kafka3:9093' /opt/kafka/config/server.properties
+        sudo sed -i 's|^[[:space:]]*advertised.listeners=.*|advertised.listeners=PLAINTEXT://kafka2:9092,CONTROLLER://kafka2:9093|' /opt/kafka/config/server.properties
+        sudo sed -i 's|^[[:space:]]*log.dirs=.*|log.dirs=/opt/kafka-data/kraft-combined-logs|' /opt/kafka/config/server.properties
+      SHELL
+
+      dev.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+        cat >/etc/systemd/system/kafka.service <<EOF
+[Unit]
+Description=Apache Kafka Server
+After=network.target
+
+[Service]
+Type=simple
+Environment="JAVA_HOME=/opt/jdk/microsoft-jdk-25"
+Environment="PATH=/opt/jdk/microsoft-jdk-25/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
+ExecStop=/opt/kafka/bin/kafka-server-stop.sh
+Restart=on-failure
+User=vagrant
+LimitNOFILE=100000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        systemctl daemon-reload
+        systemctl enable kafka
+      SHELL
+
     end
 end

@@ -55,7 +55,63 @@ check:
 	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
 	echo "Selected broker $$i"; \
 	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
-get-topics:
+list-topics:
 	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
 	echo "Selected broker $$i"; \
 	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-topics.sh --list --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
+describe-topics:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-topics.sh --describe --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092 --exclude-internal"
+create-topic:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-topics.sh --create --topic test1 --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
+delete-topic:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-topics.sh --delete --topic test1 --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
+log-dirs:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-log-dirs.sh --topic-list test1 --describe --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
+get-offsets:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-get-offsets.sh --bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
+dump-log:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-dump-log.sh \
+	--print-data-log \
+	--files /opt/kafka-data/kraft-combined-logs/test1-0/00000000000000000000.log \
+	bootstrap.servers=kafka1:9092,kafka2:9092,kafka3:9092"
+delete-records:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-delete-records.sh \
+	--bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092 \
+	--offset-json-file <path>"
+producer-perf-test:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-producer-perf-test.sh --topic test1 \
+	--num-records 1000 --record-size 1024 --throughput -1 --producer-props \
+	bootstrap.servers=kafka1:9092,kafka2:9092,kafka3:9092"
+consume:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-console-consumer.sh --topic test1 \
+	--bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092 \
+	--from-beginning --property print.offset=true \
+	--property print.partition=true"
+config-topic:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-configs.sh --describe --all --topic test1 \
+	--bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
+delete-topic:
+	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
+	echo "Selected broker $$i"; \
+	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-topics.sh --delete --topic test1 \
+	--bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"

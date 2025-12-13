@@ -1,0 +1,12 @@
+version: "3.5"
+
+services:
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - 9020:8080
+    environment:
+      AUTH_TYPE: DISABLED
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 192.168.56.10:9092,192.168.56.11:9092,192.168.56.12:9092

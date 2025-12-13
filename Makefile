@@ -110,8 +110,3 @@ config-topic:
 	echo "Selected broker $$i"; \
 	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-configs.sh --describe --all --topic test1 \
 	--bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"
-delete-topic:
-	@i=$$(printf "%s\n" $(BROKERS) | shuf -n 1); \
-	echo "Selected broker $$i"; \
-	cd broker-$$i && vagrant ssh -c "/opt/kafka/bin/kafka-topics.sh --delete --topic test1 \
-	--bootstrap-server kafka1:9092,kafka2:9092,kafka3:9092"

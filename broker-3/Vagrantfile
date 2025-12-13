@@ -46,6 +46,8 @@ Vagrant.configure("2") do |config|
         sudo sed -i '/controller.quorum.bootstrap.servers=/a controller.quorum.voters=1@kafka1:9093,2@kafka2:9093,3@kafka3:9093' /opt/kafka/config/server.properties
         sudo sed -i 's|^[[:space:]]*advertised.listeners=.*|advertised.listeners=PLAINTEXT://kafka3:9092,CONTROLLER://kafka3:9093|' /opt/kafka/config/server.properties
         sudo sed -i 's|^[[:space:]]*log.dirs=.*|log.dirs=/opt/kafka-data/kraft-combined-logs|' /opt/kafka/config/server.properties
+        sudo sed -i '/^auto.create.topics.enable=/d' /opt/kafka/config/server.properties
+        echo "auto.create.topics.enable=false" | sudo tee -a /opt/kafka/config/server.properties
       SHELL
 
       dev.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
